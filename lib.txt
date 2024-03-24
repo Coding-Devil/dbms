@@ -1,0 +1,159 @@
+CREATE TABLE publisher (
+    name VARCHAR(20) PRIMARY KEY,
+    phone VARCHAR(20),
+    address VARCHAR(20)
+);
+
+CREATE TABLE book (
+    book_id INTEGER PRIMARY KEY,
+    title VARCHAR(20),
+    pub_year VARCHAR(4),
+    publisher_name VARCHAR(20),
+    FOREIGN KEY (publisher_name) REFERENCES publisher(name) ON DELETE CASCADE
+);
+
+CREATE TABLE book_authors (
+    author_name VARCHAR(20),
+    book_id INTEGER,
+    PRIMARY KEY (book_id, author_name),
+    FOREIGN KEY (book_id) REFERENCES book(book_id) ON DELETE CASCADE
+);
+
+CREATE TABLE library_branch (
+    branch_id INTEGER PRIMARY KEY,
+    branch_name VARCHAR(50),
+    address VARCHAR(50)
+);
+
+CREATE TABLE book_copies (
+    no_of_copies INTEGER,
+    book_id INTEGER,
+    branch_id INTEGER,
+    PRIMARY KEY (book_id, branch_id),
+    FOREIGN KEY (book_id) REFERENCES book(book_id) ON DELETE CASCADE,
+    FOREIGN KEY (branch_id) REFERENCES library_branch(branch_id) ON DELETE CASCADE
+);
+
+
+CREATE TABLE book_lending (
+    date_out DATE,
+    due_date DATE,
+    book_id INTEGER,
+    branch_id INTEGER,
+    card_no INTEGER,
+    PRIMARY KEY (book_id, branch_id, card_no),
+    FOREIGN KEY (book_id) REFERENCES book(book_id) ON DELETE CASCADE,
+    FOREIGN KEY (branch_id) REFERENCES library_branch(branch_id) ON DELETE CASCADE
+);
+
+INSERT INTO publisher (name, address, phone) VALUES 
+('mcgrawhill', 'Bangalore', '9480506312'),
+('pearson', 'New Delhi', '9785642365'),
+('random house', 'Hydrabad', '8796452368'),
+('sapna', 'Chennai', '8947589632'),
+('oxford', 'Bangalore', '9785642315');
+
+INSERT INTO book (book_id, title, publisher_name, pub_year) VALUES 
+(1, 'DBMS', 'mcgrawhill', '2017'),
+(2, 'ADBMS', 'mcgrawhill', '2016'),
+(3, 'CN', 'pearson', '2016'),
+(4, 'CG', 'oxford', '2015'),
+(5, 'OS', 'pearson', '2016');
+
+INSERT INTO book_authors (book_id, author_name) VALUES 
+(1, 'navathe'),
+(2, 'navathe'),
+(3, 'tenenboum'),
+(4, 'edward'),
+(5, 'galvin');
+
+INSERT INTO library_branch (branch_id, branch_name, address) VALUES 
+(10, 'RR nagar', 'Bangalore'),
+(11, 'Manipal', 'Bangalore'),
+(12, 'ACIT', 'Bangalore'),
+(13, 'Rajajnagar', 'Bangalore'),
+(14, 'Acharya', 'Mangalore');
+
+INSERT INTO book_copies (no_of_copies, book_id, branch_id) VALUES 
+(10, 1, 10),
+(5, 1, 11),
+(2, 2, 12),
+(5, 2, 13),
+(7, 3, 14),
+(1, 5, 10),
+(3, 4, 11);
+
+INSERT INTO book_lending (book_id, branch_id, card_no, date_out, due_date) VALUES 
+(1, 10, 101, '2017-01-01', '2017-06-01'),
+(3, 14, 101, '2017-01-11', '2017-03-11'),
+(2, 13, 101, '2017-02-17', '2017-04-21'),
+(4, 11, 101, '2017-03-15', '2017-07-15'),
+(1, 11, 104, '2017-04-12', '2017-05-12');
+
+SHOW TABLES;
+select * from book;
+select * from book_authors;
+select * from book_copies;
+select * from book_lending;
+select * from library_branch;
+select * from publisher;
+
+#1
+select b.book_id, b.title, b.publisher_name, a.author_name, c.no_of_copies, c.branch_id 
+from book b,book_authors a,book_copies c
+where b.book_id=a.book_id and
+b.book_id=c.book_id;
+
+#2
+SELECT card_no, COUNT(book_id) AS books_borrowed
+FROM book_lending
+WHERE date_out BETWEEN '2017-01-01' AND '2017-06-30'
+GROUP BY card_no
+HAVING COUNT(book_id) > 3;
+
+select card_no
+from book_lending
+where date_out between '2017-01-01' and '2017-06-30'
+group by card_no
+having count(*)>3;
+
+#4
+create table bookpartition
+(
+book_id int,
+pub_year int, 
+publisher_name varchar(10))
+partition by range(pub_year)
+(partition p0 values less than(2000),
+partition p1 values less than(2005),
+partition p2 values less than(2010));
+
+insert into bookpartition values(1,1998,'vikas');
+insert into bookpartition values(3,1999,'subash');
+insert into bookpartition values(2,2002,'pearson');
+insert into bookpartition values(5,2005,'vikas');
+insert into bookpartition values(7,2008,'subash');
+insert into bookpartition values(8,2007,'pearson');
+
+select * from bookpartition;
+select * from bookpartition partition(p0);
+select * from bookpartition partition(p1);
+select * from bookpartition partition(p2);
+
+#3
+delete from book
+where book_id=3;
+select * from book;
+
+#5
+create view book_available as
+select b.book_id,b.title,c.no_of_copies
+from book_copies c,book b,library_branch l
+where b.book_id=c.book_id and c.branch_id=l.branch_id;
+
+SELECT * FROM book_available;
+
+SELECT b.publisher_name
+FROM book AS b
+GROUP BY b.publisher_name
+HAVING COUNT(b.publisher_name) >= 2;
