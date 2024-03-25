@@ -1,0 +1,101 @@
+create table student(usn int,sname varchar(20),address varchar(10),phone bigint,gender char(1),primary key(usn));
+create table semsec(ssid varchar(20),sem int,sec char(1),primary key(ssid));
+create table class(usn int,ssid varchar(20), primary key(usn,ssid),
+foreign key(usn) references student(usn),foreign key (ssid) references semsec(ssid));
+
+create table subject(subcode varchar(10),title varchar(10),sem int,credits int,primary key (subcode));
+
+create table iamarks(usn int, subcode varchar(10),ssid varchar(20),test1 int,test2 int,test3 int,finalia int,
+primary key(usn,subcode,ssid),foreign key (usn) references student(usn), 
+foreign key (subcode) references subject(subcode),foreign key(ssid) references semsec(ssid));
+
+insert into student values(101,'x','bang',99995,'m');
+insert into student values(102,'s','mang',99996,'f');
+insert into student values(103,'h','bang',99997,'m');
+insert into student values(104,'y','hyd',99990,'f');
+insert into student values(105,'z','mys',99998,'m');
+
+
+insert into semsec values('a101',3,'a');
+insert into semsec values('a103',4,'c');
+insert into semsec values('a102',3,'c');
+insert into semsec values('a104',4,'b');
+insert into semsec values('a105',4,'c');
+
+
+
+insert into class values(101,'a101');
+insert into class values(102,'a102');
+insert into class values(103,'a103');
+insert into class values(104,'a104');
+insert into class values(105,'a104');
+
+
+insert into subject values('18cs32','ds',3,5);
+insert into subject values('18cs33','atcd',4,5);
+insert into subject values('18cs34','mes',4,3);
+insert into subject values('18cs35','os',3,3);
+insert into subject values('18cs36','ss',4,4);
+
+
+insert into iamarks values(101,'18cs32','a101',14,15,17,NULL);
+insert into iamarks values(101,'18cs33','a101',15,15,17,NULL);
+insert into iamarks values(102,'18cs36','a102',16,15,17,NULL);
+insert into iamarks values(103,'18cs34','a103',20,15,17,NULL);
+insert into iamarks values(101,'18cs35','a101',14,15,17,NULL);
+
+select * from iamarks;
+
+select s.*,ss.sem,ss.sec
+from student s, semsec ss, class c
+where s.usn=c.usn and ss.ssid=c.ssid and ss.sem=4 and ss.sec='c';
+
+select ss.sem,ss.sec,s.gender,count(s.gender) as count 
+from student s,semsec ss,class c
+where s.usn=c.usn and ss.ssid=c.ssid 
+group by ss.sem,ss.sec,s.gender 
+order by sem;
+
+create view test1marks as
+select test1,subcode 
+from iamarks where usn=101;
+select * from test1marks;
+
+create view best_two_finder as 
+(  select usn, subcode, greatest(test1,test2,test3) as highest, 
+   case 
+	when test1<=greatest(test1,test2,test3) and test1>least(test1,test2,test3) then test1
+	when test2<=greatest(test1,test2,test3) and test2>least(test1,test2,test3) then test2
+   else test3
+   end as secondhighest from iamarks
+);
+
+
+select * from best_two_finder;
+
+create view average2 as (
+select usn,subcode, ((highest+secondhighest)/2) as final 
+from best_two_finder);
+
+select * from average2;
+
+update iamarks join average2 
+on iamarks.usn=average2.usn
+set iamarks.finalIA=average2.final;
+
+select * from iamarks;
+
+
+select s.sname,s.usn,s.address,s.phone,s.gender,(
+case when ia.finalia between 17 and 20 then 'outstanding' 
+when ia.finalia between 12 and 16 then 'average' 
+else 'weak' end) as cat 
+from student s,semsec ss,iamarks ia,subject sub 
+where s.usn=ia.usn and ss.ssid=ia.ssid and sub.subcode=ia.subcode and sub.sem=4;
+
+
+
+
+
+
+
